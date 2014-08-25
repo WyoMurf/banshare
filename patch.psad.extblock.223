@@ -1,0 +1,93 @@
+diff -ur psad-2.2.3/psad psad-2.2.3b/psad
+--- psad-2.2.3/psad	2014-03-01 19:19:51.000000000 -0700
++++ psad-2.2.3b/psad	2014-08-10 17:12:37.096387963 -0600
+@@ -20,7 +20,7 @@
+ #
+ # Credits: (see the CREDITS file bundled with the psad sources.)
+ #
+-# Version: 2.2.3
++# Version: 2.2.3b
+ #
+ # Copyright (C) 1999-2014 Michael Rash (mbr@cipherdyne.org)
+ #
+@@ -145,7 +145,7 @@
+ ### ========================== main =================================
+ 
+ ### set the current version
+-my $version = '2.2.3';
++my $version = '2.2.3b';
+ 
+ ### default config file for psad (can be changed with
+ ### --config switch)
+@@ -6038,6 +6038,29 @@
+     return;
+ }
+ 
++sub exec_external_block_script() {
++    my $src = shift;
++    $scan_ext_exec{$src} = '';
++    my $cmd = $config{'EXTERNAL_BLOCK_SCRIPT'};
++    $cmd =~ s/SRCIP/$src/;
++    my $pid;
++    if ($pid = fork()) {
++        local $SIG{'ALRM'} = sub {die "[*] External script timeout.\n"};
++        alarm 30;  ### the external script should be finished in 30 secs.
++        eval {
++            waitpid($pid, 0);
++        };
++        alarm 0;
++        if ($@) {
++            kill 9, $pid;
++        }
++    } else {
++        die "[*] Could not fork for external script: $!" unless defined $pid;
++        exec qq{$cmd};
++    }
++    return;
++}
++
+ sub renew_auto_blocked_ips() {
+ 
+     ### note that if we are renewing IP blocking rules, we just use
+@@ -6485,6 +6508,10 @@
+         }
+         &sys_log($mail_msg);
+ 
++        if ($config{'ENABLE_EXT_BLOCK_SCRIPT_EXEC'} eq 'Y') {
++            &exec_external_block_script($ip);
++        }
++
+         ### write the ip out to the auto blocked file
+         &diskwrite_blocked_ip($ip,
+             $config{'AUTO_BLOCK_IPT_FILE'}, $renewed_status);
+diff -ur psad-2.2.3/psad.conf psad-2.2.3b/psad.conf
+--- psad-2.2.3/psad.conf	2014-03-01 19:19:51.000000000 -0700
++++ psad-2.2.3b/psad.conf	2014-08-10 17:08:23.484389050 -0600
+@@ -474,6 +474,21 @@
+ ### every time a scan is detected for an ip).
+ EXEC_EXT_SCRIPT_PER_ALERT   N;
+ 
++### Enable psad to run an external script or program upon setting
++### iptables block (use at your own risk!)
++ENABLE_EXT_BLOCK_SCRIPT_EXEC      N;
++
++### Define an external program to run after a scan is blocked.
++### Note that the scan source ip can be specified on the command
++### line to the external program through the use of the "SRCIP"
++### string (along with some appropriate switch for the program).
++### Of course this is only useful if the external program knows
++### what to do with this information.
++### Example:  EXTERNAL_BLOCK_SCRIPT       /path/to/script --ip SRCIP -v;
++EXTERNAL_BLOCK_SCRIPT             /bin/true;
++
++
++
+ ### Disk usage variables
+ DISK_CHECK_INTERVAL         300;  ### seconds
+ 
+diff -ur psad-2.2.3/VERSION psad-2.2.3b/VERSION
+--- psad-2.2.3/VERSION	2014-03-01 19:19:51.000000000 -0700
++++ psad-2.2.3b/VERSION	2014-08-10 17:12:15.532388055 -0600
+@@ -1 +1 @@
+-2.2.3
++2.2.3b

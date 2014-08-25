@@ -1,0 +1,40 @@
+#!/bin/bash
+
+#TTY=
+
+#
+# Set options 
+#
+
+BANARGS=""
+if [ -f /etc/sysconfig/banshare_client ]
+then
+  . /etc/sysconfig/banshare_client
+fi
+
+ulimit -c unlimited
+ulimit -n 2048
+
+#
+# Don't die if stdout/stderr can't be written to
+#
+trap '' PIPE
+
+run_banshare_client()
+{
+  while :
+  do
+    cd /tmp
+    # There is no >>&
+    /usr/bin/banshare_client # self- daemonizes; no need for redirection of output; there is none.
+    EXITSTATUS=$?
+    echo "banshare_client ended with exit status $EXITSTATUS" >> /var/log/syslog
+    echo "Automatically restarting banshare_client"           >> /var/log/syslog
+    sleep 1
+    killall -q -9 banshare_client
+    sleep 1
+  done
+}
+
+run_banshare_client >/dev/null 2>&1 &
+

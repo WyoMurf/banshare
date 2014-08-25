@@ -1,0 +1,26 @@
+#! /bin/bash
+
+
+# Copyright (C) 2014 Steve Murphy
+# All Rights Reserved
+# License (GNU Public License):
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+#    USA
+
+## first, make sure the fail2ban is running... if not, like on a premise box, dont bother installing anything!
+
+xx=`/usr/bin/fail2ban-client status 2>/dev/null | grep Status`
+
+if [ -f /usr/bin/fail2ban-client -a x$xx != x ] ; then
+echo "stopping service..."
+service banshare-client stop
+echo "Extracting files..."
+cat << 'EO_TARFILE' > deploy-clients.tar.gz.uue

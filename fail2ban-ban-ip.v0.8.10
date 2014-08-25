@@ -1,0 +1,40 @@
+#!/bin/bash
+# Copyright (C) 2014 Steve Murphy
+# All Rights Reserved
+# License (GNU Public License):
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+#    USA
+
+## arg1 is the jail
+## arg2 is the ip
+
+### apache-macattack, secure-iptables, asterisk-iptables, secure-iptables2, vsftpd-iptables
+## this script is for the !#%$*^!*#@ 0.8.4 (and some greater) versions of fail2ban,
+## where the banip command doesn't work unless you call it N times, where n is the 
+## max tries for the jail, and then touch the logfile. Wow.
+
+default_f2b_block_jail=asterisk-iptables  ## just pick a jail name from your current repertoire--
+                                          ## if psad generated the block, but psad is not running
+                                          ## on this machine, but fail2ban is, then use this jail
+                                          ## perform the block.
+
+if [ $3 = "psad" ] ; then
+        if [ -e /usr/sbin/psad ] ; then
+                psad --fw-block-ip $2
+        else
+		fail2ban-client set asterisk-iptables banip $2
+        fi
+        exit 0
+fi
+
+fail2ban-client set $1 banip $2
+
+exit 0

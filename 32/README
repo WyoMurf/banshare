@@ -1,0 +1,7 @@
+This directory is meant to hold 32-bit versions of the banshare execs and objs.
+
+If you are going to distribute nothing but 64-bit execs, you can leave this dir empty.
+
+Otherwise, if you intend to deploy to 32-bit machines, then do a "make 32" while on 32-bit machine.
+
+~

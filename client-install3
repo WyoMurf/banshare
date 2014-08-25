@@ -1,0 +1,78 @@
+EO_TARFILE
+uudecode deploy-clients.tar.gz.uue
+tar xzf deploy-clients.tar.gz
+cd banshare
+echo installing banshare-report
+if [ -e /lib64 ] ; then
+cp 64/banshare-reporter /usr/bin/banshare-report
+ if [ ! -e /usr/lib/libczmq.so ] ; then
+   /bin/cp -f mqlibs64.tar.gz /
+   (cd /; tar xzf mqlibs64.tar.gz)
+   rm /mqlibs64.tar.gz
+ fi
+else
+cp 32/banshare-reporter /usr/bin/banshare-report
+ if [ ! -e /usr/lib/libczmq.so ] ; then
+   /bin/cp -f mqlibs32.tar.gz /
+   (cd /; tar xzf mqlibs32.tar.gz)
+   rm /mqlibs32.tar.gz
+ fi
+fi
+
+f2bv=`fail2ban-client -V | head -1 | sed 's/Fail2Ban //'`
+echo "install the correct fail2ban-ban-ip script ($f2bv)"
+/bin/cp -f fail2ban-ban-ip.$f2bv /usr/bin/fail2ban-ban-ip
+
+echo installing banshare-client
+if [ -e /lib64 ] ; then
+cp 64/banshare-client /usr/bin
+else
+cp 32/banshare-client /usr/bin/banshare-client
+fi
+
+if [ -e /etc/ssl/certs ] ; then
+  echo "/etc/ssl/certs exists, we will use that"
+  if [ ! -e /etc/ssl/certs/banshare ] ; then
+	mkdir /etc/ssl/certs/banshare
+  fi
+  echo "Installing certs"
+  /bin/cp -f client_banshare  server_banshare /etc/ssl/certs/banshare
+
+elif [ -e /etc/pki/tls/certs ] ; then
+  echo "/etc/pki/tls/certs exists, we will use that"
+
+  if [ ! -e /etc/pki/tls/certs/banshare ] ; then
+        mkdir /etc/pki/tls/certs/banshare
+  fi
+  echo "Installing certs"
+  /bin/cp -f client_banshare  server_banshare /etc/pki/tls/certs/banshare
+fi
+
+## get the /etc/init.d script in place
+echo installing init.d banshare-client file...
+cp init-client /etc/init.d/banshare-client
+chmod a+x /etc/init.d/banshare-client
+cp safe_banshare_client /usr/bin
+
+## make sure the service will come up on reboot
+
+echo chkconfig...
+chkconfig --add banshare-client
+chkconfig banshare-client on
+
+## start the service
+
+echo "Starting client service..."
+service banshare-client start
+
+## clean the install, leave nothing laying around
+
+cd ../
+echo "Cleaning..."
+rm -rf banshare deploy-clients.tar.gz.uue deploy-clients.tar.gz
+
+else
+echo "Skipping install... fail2ban not installed or running."
+fi
+echo Done
+

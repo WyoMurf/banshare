@@ -1,0 +1,77 @@
+EO_TARFILE
+
+uudecode deploy-server.tar.gz.uue
+tar xzf deploy-server.tar.gz
+cd banshare
+
+echo install banshare-server executable
+if [ -e /lib64 ] ; then
+ cp 64/banshare-server /usr/bin
+ if [ ! -e /usr/lib/libczmq.so ] ; then
+   /bin/cp -f mqlibs64.tar.gz /
+   (cd /; tar xzvf mqlibs64.tar.gz)
+   rm /mqlibs64.tar.gz
+ fi
+else
+ cp 32/banshare-server /usr/bin
+ if [ ! -e /usr/lib/libczmq.so ] ; then
+   /bin/cp -f mqlibs32.tar.gz /
+   (cd /; tar xzvf mqlibs32.tar.gz)
+   rm /mqlibs32.tar.gz
+ fi
+fi
+
+if [ -e /etc/ssl/certs ] ; then
+  echo "/etc/ssl/certs exists, we will use that"
+  if [ ! -e /etc/ssl/certs/banshare ] ; then
+        mkdir /etc/ssl/certs/banshare
+  fi
+  echo "Installing certs"
+  /bin/cp -f client_banshare  server_banshare /etc/ssl/certs/banshare
+
+elif [ -e /etc/pki/tls/certs ] ; then
+  echo "/etc/pki/tls/certs exists, we will use that"
+
+  if [ ! -e /etc/pki/tls/certs/banshare ] ; then
+        mkdir /etc/pki/tls/certs/banshare
+  fi
+  echo "Installing certs"
+  /bin/cp -f client_banshare  server_banshare /etc/pki/tls/certs/banshare
+fi
+
+
+## does the firewall have a rule for this mechanism?
+##  open the firewall to these ports
+
+echo "See if we can add Voclarion firewall rules?..."
+
+./fire.php
+
+## get the /etc/init.d script in place
+
+echo "Install the init.d file for banshare-server"
+
+cp init-server /etc/init.d/banshare-server
+chmod a+x /etc/init.d/banshare-server
+cp safe_banshare_server /usr/bin
+
+## make sure the service will come up on reboot
+
+echo "chkconfig stuff..."
+chkconfig --add banshare-server
+chkconfig banshare-server on
+
+## start the service
+
+echo "Start banshare-server service"
+service banshare-server start
+
+## clean the install, leave nothing laying around
+
+echo "Cleaning up..."
+cd ../
+
+rm -rf banshare deploy-server.tar.gz
+rm -rf deploy-server.tar.gz.uue
+
+echo "Done."

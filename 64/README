@@ -1,0 +1,3 @@
+This directory is meant to hold 64-bit versions of the banshare execs.
+a plain "make" will compile and fill this dir; hopefully, you are on
+a 64-bit machine when you do it!

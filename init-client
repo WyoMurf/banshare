@@ -1,0 +1,88 @@
+#!/bin/bash
+#
+# banshare-client	This shell script takes care of starting and stopping
+#		the banshare (ban distribution mechanism)
+#
+# chkconfig: - 58 74
+# description: banshare-client is distribution of fail2ban/psad/whatever bans.
+
+# Source function library.
+. /etc/init.d/functions
+
+# Source networking configuration.
+. /etc/sysconfig/network
+
+if [ -f /etc/sysconfig/banshare-client ];then
+        . /etc/sysconfig/banshare-client
+fi
+
+RETVAL=0
+prog="banshare-client"
+[ -f /usr/bin/banshare-client ]
+
+start() {
+        # Start daemons.
+        #echo -n $"Starting safe_banshare_client: "
+	ulimit -s 512
+        daemon /usr/bin/banshare-client
+	RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && touch /var/lock/subsys/banshare-client
+	return $RETVAL
+}
+
+stop() {
+        echo -n $"Shutting down $prog: "
+	killproc /usr/bin/banshare-client
+	RETVAL=$?
+        echo
+        [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/banshare-client
+	return $RETVAL
+}
+
+status() {
+	isrunning=`ps aux|grep banshare-client|grep -v grep|grep -v status|grep -v vim|grep -v vi`
+
+	if [ -n "$isrunning" ]
+	then
+		echo "banshare-client daemon is running"
+	fi
+	if [ -z "$isrunning" ]
+	then
+		echo "banshare-client daemon is *NOT* running"
+	fi
+	RETVAL=$?
+	return $RETVAL;
+}
+
+# See how we were called.
+case "$1" in
+  start)
+	start
+        ;;
+  stop)
+	stop
+        ;;
+  status)
+	status
+	RETVAL=$?
+	;;
+  restart|reload)
+	stop
+	start
+	RETVAL=$?
+	;;
+  condrestart)
+	if [ -f /var/lock/subsys/banshare-client ]; then
+	    stop
+	    start
+	    RETVAL=$?
+	fi
+	;;
+  *)
+        echo $"Usage: $0 {start|stop|restart|condrestart|status}"
+        RETVAL=3
+esac
+
+exit $RETVAL
+
